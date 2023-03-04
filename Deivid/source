@@ -114,6 +114,27 @@ function Library:MakeWindow(Options)
     Main.Size = UDim2.new(0, Options.SizeX or 425, 0, Options.SizeY or 425)
     Topbar.Title.Text = Options.Name or "Title"
     Tabs.Visible = false
+
+    pcall(function()
+		if not Options.ConfigurationSaving.FileName then
+			Options.ConfigurationSaving.FileName = tostring(game.PlaceId)
+		end
+		if not isfolder(DeividFolder.."/".."Configuration Folders") then
+			
+		end
+		if Options.ConfigurationSaving.Enabled == nil then
+			Options.ConfigurationSaving.Enabled = false
+		end
+		CFileName = Options.ConfigurationSaving.FileName
+		ConfigurationFolder = Options.ConfigurationSaving.FolderName or ConfigurationFolder
+		CEnabled = Options.ConfigurationSaving.Enabled
+
+		if Options.ConfigurationSaving.Enabled then
+			if not isfolder(ConfigurationFolder) then
+				makefolder(ConfigurationFolder)
+			end	
+		end
+	end)
     
     AddDraggingFunctionality(Topbar,Main)
 
