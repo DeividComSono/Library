@@ -15,7 +15,6 @@ local CoreGui = game:GetService("CoreGui")
 local Mouse = Players.LocalPlayer:GetMouse()
 
 local Deivid = game:GetObjects("rbxassetid://12668978345")[1]
-Deivid.Enabled = false
 Deivid.Parent = CoreGui
 
 for _, Interface in ipairs(CoreGui:GetChildren()) do
@@ -32,6 +31,7 @@ local Background = Main.Background
 local Sidebar = Main.Sidebar
 local Tabs = Background.Tabs
 
+Main.Visible = false
 Deivid.DisplayOrder = 999
 
 local request = (syn and syn.request) or (http and http.request) or http_request
@@ -126,7 +126,7 @@ function Library:MakeWindow(Options)
     local Window = {}
 
     function Window:NewTab(Name)
-        Deivid.Enabled = true
+        Main.Visible = true
 		local TabButton = Sidebar.List.Template:Clone()
 		TabButton.Name = Name
 		TabButton.Button.Text = Name
