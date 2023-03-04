@@ -645,7 +645,6 @@ function Library:LoadConfiguration()
     if CEnabled then
 		pcall(function()
 			if isfile(ConfigurationFolder .. "/" .. CFileName .. ConfigurationExtension) then
-                print("ted")
 				LoadConfiguration(readfile(ConfigurationFolder .. "/" .. CFileName .. ConfigurationExtension))
 			end
 		end)
