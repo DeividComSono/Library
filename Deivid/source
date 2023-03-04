@@ -1,3 +1,7 @@
+local DeividFolder = "Deivid"
+local ConfigurationFolder = DeividFolder.."/Configurations"
+local ConfigurationExtension = ".baller"
+
 local Library = {
     Flags = {},
 }
@@ -31,6 +35,8 @@ local Tabs = Background.Tabs
 Deivid.DisplayOrder = 999
 
 local request = (syn and syn.request) or (http and http.request) or http_request
+local CFileName = nil
+local CEnabled = false
 local Hidden = false
 local SideHidden = true
 local Debounce = false
@@ -91,6 +97,15 @@ local function AddDraggingFunctionality(DragPoint, Main)
 			end
 		end)
 	end)
+end
+
+local function SaveConfiguration()
+	if not CEnabled then return end
+	local Data = {}
+	for i,v in pairs(Library.Flags) do
+		Data[i] = v.CurrentValue or v.CurrentKeybind or v.CurrentOption or v.Color
+	end	
+	writefile(ConfigurationFolder .. "/" .. CFileName .. ConfigurationExtension, tostring(HttpService:JSONEncode(Data)))
 end
 
 function Library:MakeWindow(Options)
