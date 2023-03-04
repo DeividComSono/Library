@@ -371,6 +371,12 @@ function Library:MakeWindow(Options)
                     SaveConfiguration()
                 end)
 
+                if Options.ConfigurationSaving then
+                    if Options.ConfigurationSaving.Enabled and ToggleOptions.Flag then
+                        Deivid.Flags[ToggleSettings.Flag] = ToggleOptions
+                    end
+                end
+
                 return ToggleValue
             end
 
