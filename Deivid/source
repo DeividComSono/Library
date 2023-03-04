@@ -11,6 +11,7 @@ local CoreGui = game:GetService("CoreGui")
 local Mouse = Players.LocalPlayer:GetMouse()
 
 local Deivid = game:GetObjects("rbxassetid://12668978345")[1]
+Deivid.Enabled = false
 Deivid.Parent = CoreGui
 
 for _, Interface in ipairs(CoreGui:GetChildren()) do
@@ -98,6 +99,7 @@ function Library:MakeWindow(Options)
     Main.Size = UDim2.new(0, Options.SizeX or 425, 0, Options.SizeY or 425)
     Topbar.Title.Text = Options.Name or "Title"
     Tabs.Visible = false
+    Deivid.Enabled = true
 
     AddDraggingFunctionality(Topbar,Main)
 
