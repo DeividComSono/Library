@@ -121,12 +121,13 @@ function Library:MakeWindow(Options)
 	Tabs.Template.Visible = false
 
     Sidebar.List.Template.Visible = false
+    Main.Visible = true
 
     local FirstTab = true
     local Window = {}
 
     function Window:NewTab(Name)
-        Main.Visible = true
+        
 		local TabButton = Sidebar.List.Template:Clone()
 		TabButton.Name = Name
 		TabButton.Button.Text = Name
