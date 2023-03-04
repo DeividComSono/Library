@@ -541,6 +541,9 @@ function Library:MakeWindow(Options)
                 Input.Visible = true
                 Input.Parent = Section.List
 
+                Input.Input.PlaceholderText = InputOptions.PlaceholderText
+                Input.Input.Size = UDim2.new(0, Input.Input.TextBounds.X + 16, 0, 24)
+
                 Input.MouseEnter:Connect(function()
                     TweenService:Create(Input.UIStroke, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Color = Color3.fromRGB(80, 80, 80)}):Play()
                 end)
