@@ -99,8 +99,7 @@ function Library:MakeWindow(Options)
     Main.Size = UDim2.new(0, Options.SizeX or 425, 0, Options.SizeY or 425)
     Topbar.Title.Text = Options.Name or "Title"
     Tabs.Visible = false
-    Deivid.Enabled = true
-
+    
     AddDraggingFunctionality(Topbar,Main)
 
     Tabs.Template.LayoutOrder = 100000
@@ -112,6 +111,7 @@ function Library:MakeWindow(Options)
     local Window = {}
 
     function Window:NewTab(Name)
+        Deivid.Enabled = true
 		local TabButton = Sidebar.List.Template:Clone()
 		TabButton.Name = Name
 		TabButton.Button.Text = Name
