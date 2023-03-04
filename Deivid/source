@@ -1,9 +1,5 @@
-local DeividFolder = "Deivid"
-local ConfigurationFolder = DeividFolder.."/Configurations"
-local ConfigurationExtension = ".baller"
-
 local Library = {
-    Flags = {}
+    Flags = {},
 }
 
 local UserInputService = game:GetService("UserInputService")
@@ -34,8 +30,6 @@ local Tabs = Background.Tabs
 Deivid.DisplayOrder = 999
 
 local request = (syn and syn.request) or (http and http.request) or http_request
-local CFileName = nil
-local CEnabled = false
 local Hidden = false
 local SideHidden = true
 local Debounce = false
@@ -98,55 +92,12 @@ local function AddDraggingFunctionality(DragPoint, Main)
 	end)
 end
 
-local function LoadConfiguration(Configuration)
-	local Data = HttpService:JSONDecode(Configuration)
-	table.foreach(Data, function(FlagName, FlagValue)
-		if Library.Flags[FlagName] then
-			spawn(function() 
-				if RayfieldLibrary.Flags[FlagName].CurrentValue then Library.Flags[FlagName]:Set(FlagValue) end  
-			end)
-		else
-			RayfieldLibrary:Notify({Title = "Flag Error", Content = "Rayfield was unable to find '"..FlagName.. "'' in the current script"})
-		end
-	end)
-end
-
-local function SaveConfiguration()
-	if not CEnabled then return end
-	local Data = {}
-	for i,v in pairs(Library.Flags) do
-		Data[i] = v.CurrentValue
-	end	
-	writefile(ConfigurationFolder .. "/" .. CFileName .. ConfigurationExtension, tostring(HttpService:JSONEncode(Data)))
-end
-
 function Library:MakeWindow(Options)
     Main.AnchorPoint = Vector2.new(0, 0)
     Main.Position = UDim2.fromOffset((Camera.ViewportSize.X) - (Main.Size.X.Offset / 1), (Camera.ViewportSize.Y/1) - (Main.Size.Y.Offset / 1))
     Main.Size = UDim2.new(0, Options.SizeX or 425, 0, Options.SizeY or 425)
     Topbar.Title.Text = Options.Name or "Title"
     Tabs.Visible = false
-
-    pcall(function()
-        if not Options.ConfigurationSaving.FileName then
-			Options.ConfigurationSaving.FileName = tostring(game.PlaceId)
-		end
-		if not isfolder(DeividFolder.."/".."Configuration Folders") then
-			
-		end
-		if Options.ConfigurationSaving.Enabled == nil then
-			Options.ConfigurationSaving.Enabled = false
-		end
-		CFileName = Options.ConfigurationSaving.FileName
-		ConfigurationFolder = Options.ConfigurationSaving.FolderName or ConfigurationFolder
-		CEnabled = Options.ConfigurationSaving.Enabled
-
-		if Options.ConfigurationSaving.Enabled then
-			if not isfolder(ConfigurationFolder) then
-				makefolder(ConfigurationFolder)
-			end	
-		end
-    end)
 
     AddDraggingFunctionality(Topbar,Main)
 
@@ -368,14 +319,7 @@ function Library:MakeWindow(Options)
                         TweenService:Create(Toggle.UIStroke, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Color = Color3.fromRGB(65, 65, 65)}):Play()
                         Toggle.Button.Text = ToggleOptions.Name
                     end
-                    SaveConfiguration()
                 end)
-
-                if Options.ConfigurationSaving then
-                    if Options.ConfigurationSaving.Enabled and ToggleOptions.Flag then
-                        Deivid.Flags[ToggleSettings.Flag] = ToggleOptions
-                    end
-                end
 
                 return ToggleValue
             end
@@ -412,12 +356,10 @@ function Library:MakeWindow(Options)
 
                     local Success, Response = pcall(function()
                         SliderOptions.Callback(SliderOptions.CurrentSliderValue, SliderOptions.CurrentToggleValue)
-                        
                     end)
                     if not Success then
                         print("Error")
                     end
-                    SaveConfiguration()
 				end
 
                 Slider.Slider.Button.InputBegan:Connect(function(input)
@@ -489,7 +431,6 @@ function Library:MakeWindow(Options)
 
 					local Success, Response = pcall(function()
                         SliderOptions.Callback(SliderOptions.CurrentSliderValue, SliderOptions.CurrentToggleValue)
-                        
                     end)
                     if not Success then
                         print("error")
@@ -593,11 +534,50 @@ function Library:MakeWindow(Options)
                 return SliderValue
             end
 
+            function Sec:NewInput(InputOptions)
+                local Input = Tabs.Template.Section.List.Input:Clone()
+                Input.Name = InputOptions.Name
+                Input.Title.Text = InputOptions.Name
+                Input.Visible = true
+                Input.Parent = Section.List
+
+                Input.MouseEnter:Connect(function()
+                    TweenService:Create(Input.UIStroke, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Color = Color3.fromRGB(80, 80, 80)}):Play()
+                end)
+
+                Input.MouseLeave:Connect(function()
+                    TweenService:Create(Input.UIStroke, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Color = Color3.fromRGB(65, 65, 65)}):Play()
+                end)
+
+                Input.Input.FocusLost:Connect(function()
+                    local Success, Response = pcall(function()
+                        InputOptions.Callback(Input.Input.Text)
+                    end)
+                    if not Success then
+                        TweenService:Create(Input, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundColor3 = Color3.fromRGB(80, 25, 25)}):Play()
+                        TweenService:Create(Input.UIStroke, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Color = Color3.fromRGB(90, 90, 90)}):Play()
+                        Input.Title.Text = "Callback Error"
+                        warn("Deivid UI | "..InputOptions.Name.." Callback Error: " ..tostring(Response))
+                        task.wait(0.5)
+                        TweenService:Create(Input, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundColor3 = Color3.fromRGB(45, 45, 45)}):Play()
+                        TweenService:Create(Input.UIStroke, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Color = Color3.fromRGB(65, 65, 65)}):Play()
+                        Input.Title.Text = InputOptions.Name
+                    end
+                    
+                    if InputOptions.RemoveTextAfterFocusLost then
+                        Input.Input.Text = ""
+                    end
+                end)
+
+                Input.Input:GetPropertyChangedSignal("Text"):Connect(function()
+                    TweenService:Create(Input.Input, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Size = UDim2.new(0, Input.Input.TextBounds.X + 16, 0, 24)}):Play()
+                end)
+            end
+
             return Sec
         end
 
         return Tab
-        
     end
 
     Topbar.Indicator.MouseButton1Click:Connect(function()
