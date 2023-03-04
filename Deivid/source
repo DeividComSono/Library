@@ -99,6 +99,17 @@ local function AddDraggingFunctionality(DragPoint, Main)
 	end)
 end
 
+local function LoadConfiguration(Configuration)
+	local Data = HttpService:JSONDecode(Configuration)
+	table.foreach(Data, function(FlagName, FlagValue)
+		if Library.Flags[FlagName] then
+			spawn(function() 
+				if Library.Flags[FlagName].CurrentValue or Library.Flags[FlagName].CurrentKeybind or Library.Flags[FlagName].CurrentOption or Library.Flags[FlagName].Color ~= FlagValue then Library.Flags[FlagName]:Set(FlagValue) end   
+			end)
+		end
+	end)
+end
+
 local function SaveConfiguration()
 	if not CEnabled then return end
 	local Data = {}
@@ -131,7 +142,7 @@ function Library:MakeWindow(Options)
 
 		if Options.ConfigurationSaving.Enabled then
 			if not isfolder(ConfigurationFolder) then
-				makefolder(ConfigurationFolder)
+				makefolder("a")
 			end	
 		end
 	end)
@@ -271,9 +282,9 @@ function Library:MakeWindow(Options)
                         Button.Button.Text = "Callback Error"
                         warn("Deivid UI | "..ButtonOptions.Name.." Callback Error: " ..tostring(Response))
                         task.wait(0.5)
+                        Button.Button.Text = ButtonOptions.Name
                         TweenService:Create(Button, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundColor3 = Color3.fromRGB(45, 45, 45)}):Play()
                         TweenService:Create(Button.UIStroke, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Color = Color3.fromRGB(65, 65, 65)}):Play()
-                        Button.Button.Text = ButtonOptions.Name
                     else
                         TweenService:Create(Button, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundColor3 = Color3.fromRGB(60, 60, 60)}):Play()
                         TweenService:Create(Button.UIStroke, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Color = Color3.fromRGB(90, 90, 90)}):Play()
@@ -354,10 +365,11 @@ function Library:MakeWindow(Options)
                         Toggle.Button.Text = "Callback Error"
                         warn("Deivid UI | "..ToggleOptions.Name.." Callback Error: " ..tostring(Response))
                         task.wait(0.5)
+                        Toggle.Button.Text = ToggleOptions.Name
                         TweenService:Create(Toggle, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundColor3 = Color3.fromRGB(45, 45, 45)}):Play()
                         TweenService:Create(Toggle.UIStroke, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Color = Color3.fromRGB(65, 65, 65)}):Play()
-                        Toggle.Button.Text = ToggleOptions.Name
                     end
+                    SaveConfiguration()
                 end)
 
                 return ToggleValue
@@ -627,6 +639,17 @@ function Library:MakeWindow(Options)
     end)
 
     return Window
+end
+
+function Library:LoadConfiguration()
+    if CEnabled then
+		pcall(function()
+			if isfile(ConfigurationFolder .. "/" .. CFileName .. ConfigurationExtension) then
+                print("ted")
+				LoadConfiguration(readfile(ConfigurationFolder .. "/" .. CFileName .. ConfigurationExtension))
+			end
+		end)
+	end
 end
 
 return Library
