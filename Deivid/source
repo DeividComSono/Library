@@ -1,4 +1,10 @@
-local Library = {}
+local DeividFolder = "Deivid"
+local ConfigurationFolder = DeividFolder.."/Configurations"
+local ConfigurationExtension = ".baller"
+
+local Library = {
+    Flags = {}
+}
 
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
@@ -28,6 +34,8 @@ local Tabs = Background.Tabs
 Deivid.DisplayOrder = 999
 
 local request = (syn and syn.request) or (http and http.request) or http_request
+local CFileName = nil
+local CEnabled = false
 local Hidden = false
 local SideHidden = true
 local Debounce = false
@@ -90,12 +98,55 @@ local function AddDraggingFunctionality(DragPoint, Main)
 	end)
 end
 
+local function LoadConfiguration(Configuration)
+	local Data = HttpService:JSONDecode(Configuration)
+	table.foreach(Data, function(FlagName, FlagValue)
+		if Library.Flags[FlagName] then
+			spawn(function() 
+				if RayfieldLibrary.Flags[FlagName].CurrentValue then Library.Flags[FlagName]:Set(FlagValue) end  
+			end)
+		else
+			RayfieldLibrary:Notify({Title = "Flag Error", Content = "Rayfield was unable to find '"..FlagName.. "'' in the current script"})
+		end
+	end)
+end
+
+local function SaveConfiguration()
+	if not CEnabled then return end
+	local Data = {}
+	for i,v in pairs(Library.Flags) do
+		Data[i] = v.CurrentValue
+	end	
+	writefile(ConfigurationFolder .. "/" .. CFileName .. ConfigurationExtension, tostring(HttpService:JSONEncode(Data)))
+end
+
 function Library:MakeWindow(Options)
     Main.AnchorPoint = Vector2.new(0, 0)
     Main.Position = UDim2.fromOffset((Camera.ViewportSize.X) - (Main.Size.X.Offset / 1), (Camera.ViewportSize.Y/1) - (Main.Size.Y.Offset / 1))
     Main.Size = UDim2.new(0, Options.SizeX or 425, 0, Options.SizeY or 425)
     Topbar.Title.Text = Options.Name or "Title"
     Tabs.Visible = false
+
+    pcall(function()
+        if not Options.ConfigurationSaving.FileName then
+			Options.ConfigurationSaving.FileName = tostring(game.PlaceId)
+		end
+		if not isfolder(DeividFolder.."/".."Configuration Folders") then
+			
+		end
+		if Options.ConfigurationSaving.Enabled == nil then
+			Options.ConfigurationSaving.Enabled = false
+		end
+		CFileName = Options.ConfigurationSaving.FileName
+		ConfigurationFolder = Options.ConfigurationSaving.FolderName or ConfigurationFolder
+		CEnabled = Options.ConfigurationSaving.Enabled
+
+		if Options.ConfigurationSaving.Enabled then
+			if not isfolder(ConfigurationFolder) then
+				makefolder(ConfigurationFolder)
+			end	
+		end
+    end)
 
     AddDraggingFunctionality(Topbar,Main)
 
@@ -317,6 +368,7 @@ function Library:MakeWindow(Options)
                         TweenService:Create(Toggle.UIStroke, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Color = Color3.fromRGB(65, 65, 65)}):Play()
                         Toggle.Button.Text = ToggleOptions.Name
                     end
+                    SaveConfiguration()
                 end)
 
                 return ToggleValue
@@ -354,10 +406,12 @@ function Library:MakeWindow(Options)
 
                     local Success, Response = pcall(function()
                         SliderOptions.Callback(SliderOptions.CurrentSliderValue, SliderOptions.CurrentToggleValue)
+                        
                     end)
                     if not Success then
                         print("Error")
                     end
+                    SaveConfiguration()
 				end
 
                 Slider.Slider.Button.InputBegan:Connect(function(input)
@@ -429,6 +483,7 @@ function Library:MakeWindow(Options)
 
 					local Success, Response = pcall(function()
                         SliderOptions.Callback(SliderOptions.CurrentSliderValue, SliderOptions.CurrentToggleValue)
+                        
                     end)
                     if not Success then
                         print("error")
