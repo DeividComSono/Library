@@ -372,7 +372,13 @@ function Library:MakeWindow(Options)
                     SaveConfiguration()
                 end)
 
-                return ToggleValue
+                if Options.ConfigurationSaving then
+                    if Options.ConfigurationSaving.Enabled and ToggleOptions.Flag then
+                        Library.Flags[ToggleOptions.Flag] = ToggleOptions
+                    end
+                end
+
+                return ToggleOptions
             end
 
             function Sec:NewSlider(SliderOptions)
@@ -645,6 +651,7 @@ function Library:LoadConfiguration()
     if CEnabled then
 		pcall(function()
 			if isfile(ConfigurationFolder .. "/" .. CFileName .. ConfigurationExtension) then
+                
 				LoadConfiguration(readfile(ConfigurationFolder .. "/" .. CFileName .. ConfigurationExtension))
 			end
 		end)
