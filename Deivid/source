@@ -1,0 +1,549 @@
+local Library = {}
+
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local HttpService = game:GetService("HttpService")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local CoreGui = game:GetService("CoreGui")
+local Mouse = Players.LocalPlayer:GetMouse()
+
+local Deivid = game:GetObjects("rbxassetid://12668978345")[1]
+Deivid.Parent = CoreGui
+
+for _, Interface in ipairs(CoreGui:GetChildren()) do
+	if Interface.Name == Deivid.Name and Interface ~= Deivid then
+		Interface.Enabled = false
+		Interface:Destroy()
+	end
+end
+
+local Camera = workspace.CurrentCamera
+local Main = Deivid.Window
+local Topbar = Main.Topbar
+local Background = Main.Background
+local Sidebar = Main.Sidebar
+local Tabs = Background.Tabs
+
+Deivid.DisplayOrder = 999
+
+local request = (syn and syn.request) or (http and http.request) or http_request
+local Hidden = false
+local SideHidden = true
+local Debounce = false
+
+local function Round(Number, Factor)
+	local Result = math.floor(Number/Factor + (math.sign(Number) * 0.5)) * Factor
+	if Result < 0 then Result = Result + Factor end
+	return Result
+end
+
+function ShowSide()
+    if Cooldown then return end
+    if SideHidden then
+        Cooldown = true
+        SideHidden = false
+        Sidebar.Visible = true
+        Sidebar.List.Visible = true
+        TweenService:Create(Sidebar, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 145, 1, -35)}):Play()
+        task.wait(0.25)
+        Cooldown = false
+    elseif not SideHidden then
+        Cooldown = true
+        SideHidden = true
+        
+        TweenService:Create(Sidebar, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 0, 1, -35)}):Play()
+        task.wait(0.25)
+        Sidebar.Visible = false
+        Sidebar.List.Visible = false
+        Cooldown = false
+    end
+end
+
+local function AddDraggingFunctionality(DragPoint, Main)
+	pcall(function()
+		local Dragging, DragInput, MousePos, FramePos = false
+		DragPoint.InputBegan:Connect(function(Input)
+			if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+				Dragging = true
+				MousePos = Input.Position
+				FramePos = Main.Position
+
+				Input.Changed:Connect(function()
+					if Input.UserInputState == Enum.UserInputState.End then
+						Dragging = false
+					end
+				end)
+			end
+		end)
+		DragPoint.InputChanged:Connect(function(Input)
+			if Input.UserInputType == Enum.UserInputType.MouseMovement then
+				DragInput = Input
+			end
+		end)
+		UserInputService.InputChanged:Connect(function(Input)
+			if Input == DragInput and Dragging then
+				local Delta = Input.Position - MousePos
+				TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position  = UDim2.new(FramePos.X.Scale,FramePos.X.Offset + Delta.X, FramePos.Y.Scale, FramePos.Y.Offset + Delta.Y)}):Play()
+			end
+		end)
+	end)
+end
+
+function Library:MakeWindow(Options)
+    Main.AnchorPoint = Vector2.new(0, 0)
+    Main.Position = UDim2.fromOffset((Camera.ViewportSize.X) - (Main.Size.X.Offset / 1), (Camera.ViewportSize.Y/1) - (Main.Size.Y.Offset / 1))
+    Main.Size = UDim2.new(0, Options.SizeX or 425, 0, Options.SizeY or 425)
+    Topbar.Title.Text = Options.Name or "Title"
+    Tabs.Visible = false
+
+    AddDraggingFunctionality(Topbar,Main)
+
+    Tabs.Template.LayoutOrder = 100000
+	Tabs.Template.Visible = false
+
+    Sidebar.List.Template.Visible = false
+
+    local FirstTab = true
+    local Window = {}
+
+    function Window:NewTab(Name)
+		local TabButton = Sidebar.List.Template:Clone()
+		TabButton.Name = Name
+		TabButton.Button.Text = Name
+		TabButton.Parent = Sidebar.List
+        TabButton.Visible = true
+        
+        local TabPage = Tabs.Template:Clone()
+		TabPage.Name = Name
+		TabPage.Visible = false
+
+		TabPage.LayoutOrder = #Tabs:GetChildren()
+
+
+        for _, TemplateElement in ipairs(TabPage:GetChildren()) do
+			if TemplateElement.ClassName == "Frame" then
+				TemplateElement:Destroy()
+			end
+		end
+        TabPage.Parent = Tabs
+        if FirstTab then
+            FirstTab = false
+            TabButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+            TabButton.UIStroke.Color = Color3.fromRGB(85, 85, 85)
+            TabPage.Visible = true
+            
+        end
+        Tabs.Visible = true
+
+        TabButton.Button.MouseEnter:Connect(function()
+            if TabPage.Visible then return end
+            TweenService:Create(TabButton.UIStroke, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Color = Color3.fromRGB(65, 65, 65)}):Play()
+        end)
+
+        TabButton.Button.MouseLeave:Connect(function()
+            if TabPage.Visible then return end
+            TweenService:Create(TabButton.UIStroke, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Color = Color3.fromRGB(45, 45, 45)}):Play()
+        end)
+
+        TabButton.Button.MouseButton1Click:Connect(function()
+            for _, Tab in next, Sidebar.List:GetChildren() do
+				if Tab:IsA("Frame") then
+					TweenService:Create(Tab, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = Color3.fromRGB(35, 35, 35)}):Play()
+                    TweenService:Create(Tab.UIStroke, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Color = Color3.fromRGB(45, 45, 45)}):Play()
+                end    
+			end
+            for _, ItemContainer in next, Tabs:GetChildren() do
+				if ItemContainer.ClassName == "ScrollingFrame" then
+					ItemContainer.Visible = false
+				end    
+			end
+            TweenService:Create(TabButton, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = Color3.fromRGB(50, 50, 50)}):Play()
+            TweenService:Create(TabButton.UIStroke, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Color = Color3.fromRGB(85, 85, 85)}):Play()
+            TabPage.Visible = true
+        end)
+
+
+        local Tab = {}
+
+        function Tab:NewSection(SecOptions)
+            local Sec = {}
+
+            local Opened = false
+
+            local Section = Tabs.Template.Section:Clone()
+            Section.Name = SecOptions.Name
+            Section.Title.Text = SecOptions.Name
+            Section.Visible = true
+			Section.Parent = TabPage
+
+            for _, TemplateThings in ipairs(Section.List:GetChildren()) do
+                if TemplateThings.ClassName == "Frame" then
+                    TemplateThings:Destroy()
+                end
+            end
+
+            Section.Button.MouseButton1Click:Connect(function()
+                if Cooldown then return end
+                if Opened then
+                    Cooldown = true
+                    Opened = false
+                    Section.List.Visible = false
+                    TweenService:Create(Section, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(1, 0, 0, 35)}):Play()
+                    TweenService:Create(Section.Indicator, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Rotation = 0}):Play()
+                    task.wait(0.2)
+                    Cooldown = false
+                else
+                    local TotalY = (35 + Section.List.UIListLayout.AbsoluteContentSize.Y + 10)
+                    Cooldown = true
+                    Opened = true
+                    Section.List.Visible = true
+                    TweenService:Create(Section, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(1, 0, 0, TotalY)}):Play()
+                    TweenService:Create(Section.Indicator, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Rotation = 180}):Play()
+                    task.wait(0.2)
+                    Cooldown = false
+                end
+            end)
+
+            function Sec:NewButton(ButtonOptions)
+                local ButtonValue = {}
+
+                local Button = Tabs.Template.Section.List.Button:Clone()
+                Button.Name = ButtonOptions.Name
+                Button.Button.Text = ButtonOptions.Name
+                Button.Visible = true
+                Button.Parent = Section.List
+
+                Button.MouseEnter:Connect(function()
+                    TweenService:Create(Button.UIStroke, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Color = Color3.fromRGB(80, 80, 80)}):Play()
+                end)
+
+                Button.MouseLeave:Connect(function()
+                    TweenService:Create(Button.UIStroke, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Color = Color3.fromRGB(65, 65, 65)}):Play()
+                end)
+
+                Button.Button.MouseButton1Click:Connect(function()
+                    local Success, Response = pcall(ButtonOptions.Callback)
+                    if not Success then
+                        TweenService:Create(Button, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundColor3 = Color3.fromRGB(80, 25, 25)}):Play()
+                        TweenService:Create(Button.UIStroke, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Color = Color3.fromRGB(90, 90, 90)}):Play()
+                        Button.Button.Text = "Callback Error"
+                        warn("Deivid UI | "..ButtonOptions.Name.." Callback Error: " ..tostring(Response))
+                        task.wait(0.5)
+                        TweenService:Create(Button, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundColor3 = Color3.fromRGB(45, 45, 45)}):Play()
+                        TweenService:Create(Button.UIStroke, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Color = Color3.fromRGB(65, 65, 65)}):Play()
+                        Button.Button.Text = ButtonOptions.Name
+                    else
+                        TweenService:Create(Button, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundColor3 = Color3.fromRGB(60, 60, 60)}):Play()
+                        TweenService:Create(Button.UIStroke, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Color = Color3.fromRGB(90, 90, 90)}):Play()
+                        wait(0.15)
+                        TweenService:Create(Button, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundColor3 = Color3.fromRGB(45, 45, 45)}):Play()
+                        TweenService:Create(Button.UIStroke, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Color = Color3.fromRGB(65, 65, 65)}):Play()
+                    end
+                end)
+
+                function ButtonValue:Set(NewButtonOptions)
+                    Button.Button.Text = NewButtonOptions
+                    Button.Name = NewButtonOptions
+                end
+
+                return ButtonValue
+            end
+
+            function Sec:NewToggle(ToggleOptions)
+                local ToggleValue = {}
+
+                local Toggle = Tabs.Template.Section.List.Toggle:Clone()
+                Toggle.Name = ToggleOptions.Name
+                Toggle.Button.Text = ToggleOptions.Name
+                Toggle.Visible = true
+                Toggle.Parent = Section.List
+
+                if not ToggleOptions.CurrentValue then
+                    Toggle.Indicator.Icon.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+                    Toggle.Indicator.Icon.ImageTransparency = 1
+                    Toggle.Indicator.Icon.Position = UDim2.new(0, 1, 0.5, 0)
+                else
+                    Toggle.Indicator.Icon.BackgroundColor3 = Color3.fromRGB(225, 150, 50)
+                    Toggle.Indicator.Icon.ImageTransparency = 0
+                    Toggle.Indicator.Icon.Position = UDim2.new(1, -23, 0.5, 0)
+                end
+
+                Toggle.MouseEnter:Connect(function()
+                    TweenService:Create(Toggle.UIStroke, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Color = Color3.fromRGB(80, 80, 80)}):Play()
+                end)
+
+                Toggle.MouseLeave:Connect(function()
+                    TweenService:Create(Toggle.UIStroke, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Color = Color3.fromRGB(65, 65, 65)}):Play()
+                end)
+
+                Toggle.Button.MouseButton1Click:Connect(function()
+                    if ToggleOptions.CurrentValue then
+                        ToggleOptions.CurrentValue = false
+                        TweenService:Create(Toggle, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundColor3 = Color3.fromRGB(60, 60, 60)}):Play()
+                        TweenService:Create(Toggle.UIStroke, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Color = Color3.fromRGB(90, 90, 90)}):Play()
+                        TweenService:Create(Toggle.Indicator.Icon, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                            BackgroundColor3 = Color3.fromRGB(70, 70, 70),
+                            ImageTransparency = 1,
+                            Position = UDim2.new(0, 1, 0.5, 0)
+                        }):Play()
+                        task.wait(0.15)
+                        TweenService:Create(Toggle, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundColor3 = Color3.fromRGB(45, 45, 45)}):Play()
+                        TweenService:Create(Toggle.UIStroke, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Color = Color3.fromRGB(65, 65, 65)}):Play()
+                    else
+                        ToggleOptions.CurrentValue = true
+                        TweenService:Create(Toggle, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundColor3 = Color3.fromRGB(60, 60, 60)}):Play()
+                        TweenService:Create(Toggle.UIStroke, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Color = Color3.fromRGB(90, 90, 90)}):Play()
+                        TweenService:Create(Toggle.Indicator.Icon, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                            BackgroundColor3 = Color3.fromRGB(225, 150, 50),
+                            ImageTransparency = 0,
+                            Position = UDim2.new(1, -23, 0.5, 0)
+                        }):Play()
+                        task.wait(0.15)
+                        TweenService:Create(Toggle, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundColor3 = Color3.fromRGB(45, 45, 45)}):Play()
+                        TweenService:Create(Toggle.UIStroke, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Color = Color3.fromRGB(65, 65, 65)}):Play()
+                    end
+
+                    local Success, Response = pcall(function()
+                        ToggleOptions.Callback(ToggleOptions.CurrentValue)
+                    end)
+                    if not Success then
+                        TweenService:Create(Toggle, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundColor3 = Color3.fromRGB(80, 25, 25)}):Play()
+                        TweenService:Create(Toggle.UIStroke, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Color = Color3.fromRGB(90, 90, 90)}):Play()
+                        Toggle.Button.Text = "Callback Error"
+                        warn("Deivid UI | "..ToggleOptions.Name.." Callback Error: " ..tostring(Response))
+                        task.wait(0.5)
+                        TweenService:Create(Toggle, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundColor3 = Color3.fromRGB(45, 45, 45)}):Play()
+                        TweenService:Create(Toggle.UIStroke, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Color = Color3.fromRGB(65, 65, 65)}):Play()
+                        Toggle.Button.Text = ToggleOptions.Name
+                    end
+                end)
+
+                return ToggleValue
+            end
+
+            function Sec:NewSlider(SliderOptions)
+                local SliderValue = {}
+
+                local Dragging = false
+                local MoveConnection
+                local Slider = Tabs.Template.Section.List.Slider:Clone()
+                Slider.Name = SliderOptions.Name
+                Slider.Title.Text = SliderOptions.Name
+                Slider.Visible = true
+                Slider.Parent = Section.List
+
+                local function getSliderValue(val)
+					val = math.floor(val)
+					return val
+				end
+
+				local function sliderVisual(val)
+					val = getSliderValue(val)
+
+					Slider.Input.Text = val
+
+					local valuePercent = 1 - ((SliderOptions.Max - SliderOptions.CurrentValue) / (SliderOptions.Max - SliderOptions.Min))
+					TweenService:Create(Slider.Slider.Bar, TweenInfo.new(0.25), { Size = UDim2.new(valuePercent, 0, 1, 0) }):Play()
+				end
+
+				function SliderValue:Set(val)
+					val = getSliderValue(val)
+					SliderOptions.CurrentValue = val
+					sliderVisual(val)
+
+                    local Success, Response = pcall(function()
+                        SliderOptions.Callback(SliderOptions.CurrentSliderValue, SliderOptions.CurrentToggleValue)
+                    end)
+                    if not Success then
+                        print("Error")
+                    end
+				end
+
+                Slider.Slider.Button.InputBegan:Connect(function(input)
+					if input.UserInputType == Enum.UserInputType.MouseButton1 then
+
+						MoveConnection = Mouse.Move:Connect(function()
+							local sliderPercent = math.clamp((Mouse.X - Slider.Slider.AbsolutePosition.X) / Slider.Slider.AbsoluteSize.X, 0, 1)
+							local sliderValue = math.floor((SliderOptions.Min + sliderPercent * (SliderOptions.Max - SliderOptions.Min)) * 10) / 10
+
+							SliderValue:Set(sliderValue)
+						end)
+					end
+				end)
+
+				Slider.Slider.Button.InputEnded:Connect(function(input)
+					if input.UserInputType == Enum.UserInputType.MouseButton1 then
+						MoveConnection:Disconnect()
+						MoveConnection = nil
+
+						local sliderPercent = math.clamp((Mouse.X - Slider.Slider.AbsolutePosition.X) / Slider.Slider.AbsoluteSize.X, 0, 1)
+						local sliderValue = math.floor((SliderOptions.Min + sliderPercent * (SliderOptions.Max - SliderOptions.Min)) * 10) / 10
+
+						SliderValue:Set(sliderValue)
+					end
+				end)
+
+                Slider.Input.FocusLost:Connect(function()
+					Slider.Input.Text = string.sub(Slider.Input.Text, 1, 10)
+
+					if tonumber(Slider.Input.Text) then
+						SliderValue:Set(Slider.Input.Text)
+					end
+                end)
+
+                SliderValue:Set(SliderOptions.CurrentValue)
+
+                return SliderValue
+            end
+
+            function Sec:NewSliderToggle(SliderOptions)
+                local SliderValue = {}
+
+                local Dragging = false
+                local MoveConnection
+                local Slider = Tabs.Template.Section.List.SliderToggle:Clone()
+                Slider.Name = SliderOptions.Name
+                Slider.Title.Text = SliderOptions.Name
+                Slider.Visible = true
+                Slider.Parent = Section.List
+
+                local function getSliderValue(val)
+					val = math.floor(val)
+					return val
+				end
+
+				local function sliderVisual(val)
+					val = getSliderValue(val)
+
+					Slider.Input.Text = val
+
+					local valuePercent = 1 - ((SliderOptions.Max - SliderOptions.CurrentSliderValue) / (SliderOptions.Max - SliderOptions.Min))
+					TweenService:Create(Slider.Slider.Bar, TweenInfo.new(0.25), { Size = UDim2.new(valuePercent, 0, 1, 0) }):Play()
+				end
+
+				function SliderValue:SliderSet(val)
+					val = getSliderValue(val)
+					SliderOptions.CurrentSliderValue = val
+					sliderVisual(val)
+
+					local Success, Response = pcall(function()
+                        SliderOptions.Callback(SliderOptions.CurrentSliderValue, SliderOptions.CurrentToggleValue)
+                    end)
+                    if not Success then
+                        print("error")
+                    end
+				end
+
+                if not SliderOptions.CurrentToggleValue then
+                    Slider.Indicator.Icon.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+                    Slider.Indicator.Icon.ImageTransparency = 1
+                    Slider.Indicator.Icon.Position = UDim2.new(0, 1, 0.5, 0)
+                else
+                    Slider.Indicator.Icon.BackgroundColor3 = Color3.fromRGB(225, 150, 50)
+                    Slider.Indicator.Icon.ImageTransparency = 0
+                    Slider.Indicator.Icon.Position = UDim2.new(1, -23, 0.5, 0)
+                end
+
+                Slider.MouseEnter:Connect(function()
+                    TweenService:Create(Slider.UIStroke, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Color = Color3.fromRGB(80, 80, 80)}):Play()
+                end)
+
+                Slider.MouseLeave:Connect(function()
+                    TweenService:Create(Slider.UIStroke, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Color = Color3.fromRGB(65, 65, 65)}):Play()
+                end)
+
+                Slider.Button.MouseButton1Click:Connect(function()
+                    if SliderOptions.CurrentToggleValue then
+                        SliderOptions.CurrentToggleValue = false
+                        TweenService:Create(Slider, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundColor3 = Color3.fromRGB(60, 60, 60)}):Play()
+                        TweenService:Create(Slider.UIStroke, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Color = Color3.fromRGB(90, 90, 90)}):Play()
+                        TweenService:Create(Slider.Indicator.Icon, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                            BackgroundColor3 = Color3.fromRGB(70, 70, 70),
+                            ImageTransparency = 1,
+                            Position = UDim2.new(0, 1, 0.5, 0)
+                        }):Play()
+                        task.wait(0.15)
+                        TweenService:Create(Slider, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundColor3 = Color3.fromRGB(45, 45, 45)}):Play()
+                        TweenService:Create(Slider.UIStroke, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Color = Color3.fromRGB(65, 65, 65)}):Play()
+                    else
+                        SliderOptions.CurrentToggleValue = true
+                        TweenService:Create(Slider, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundColor3 = Color3.fromRGB(60, 60, 60)}):Play()
+                        TweenService:Create(Slider.UIStroke, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Color = Color3.fromRGB(90, 90, 90)}):Play()
+                        TweenService:Create(Slider.Indicator.Icon, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                            BackgroundColor3 = Color3.fromRGB(225, 150, 50),
+                            ImageTransparency = 0,
+                            Position = UDim2.new(1, -23, 0.5, 0)
+                        }):Play()
+                        task.wait(0.15)
+                        TweenService:Create(Slider, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundColor3 = Color3.fromRGB(45, 45, 45)}):Play()
+                        TweenService:Create(Slider.UIStroke, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Color = Color3.fromRGB(65, 65, 65)}):Play()
+                    end
+
+                    local Success, Response = pcall(function()
+                        SliderOptions.Callback(SliderOptions.CurrentSliderValue, SliderOptions.CurrentToggleValue)
+                    end)
+                    if not Success then
+                        TweenService:Create(Slider, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundColor3 = Color3.fromRGB(80, 25, 25)}):Play()
+                        TweenService:Create(Slider.UIStroke, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Color = Color3.fromRGB(90, 90, 90)}):Play()
+                        Slider.Button.Text = "Callback Error"
+                        warn("Deivid UI | "..SliderOptions.Name.." Callback Error: " ..tostring(Response))
+                        task.wait(0.5)
+                        TweenService:Create(Slider, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundColor3 = Color3.fromRGB(45, 45, 45)}):Play()
+                        TweenService:Create(Slider.UIStroke, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Color = Color3.fromRGB(65, 65, 65)}):Play()
+                        Slider.Button.Text = SliderOptions.Name
+                    end
+                end)
+
+                Slider.Slider.Button.InputBegan:Connect(function(input)
+					if input.UserInputType == Enum.UserInputType.MouseButton1 then
+
+						MoveConnection = Mouse.Move:Connect(function()
+							local sliderPercent = math.clamp((Mouse.X - Slider.Slider.AbsolutePosition.X) / Slider.Slider.AbsoluteSize.X, 0, 1)
+							local sliderValue = math.floor((SliderOptions.Min + sliderPercent * (SliderOptions.Max - SliderOptions.Min)) * 10) / 10
+
+							SliderValue:SliderSet(sliderValue)
+						end)
+					end
+				end)
+
+				Slider.Slider.Button.InputEnded:Connect(function(input)
+					if input.UserInputType == Enum.UserInputType.MouseButton1 then
+						MoveConnection:Disconnect()
+						MoveConnection = nil
+
+						local sliderPercent = math.clamp((Mouse.X - Slider.Slider.AbsolutePosition.X) / Slider.Slider.AbsoluteSize.X, 0, 1)
+						local sliderValue = math.floor((SliderOptions.Min + sliderPercent * (SliderOptions.Max - SliderOptions.Min)) * 10) / 10
+
+						SliderValue:SliderSet(sliderValue)
+					end
+				end)
+
+                Slider.Input.FocusLost:Connect(function()
+					Slider.Input.Text = string.sub(Slider.Input.Text, 1, 10)
+
+					if tonumber(Slider.Input.Text) then
+						SliderValue:SliderSet(Slider.Input.Text)
+					end
+                end)
+
+                SliderValue:SliderSet(SliderOptions.CurrentSliderValue)
+
+                return SliderValue
+            end
+
+            return Sec
+        end
+
+        return Tab
+        
+    end
+
+    Topbar.Indicator.MouseButton1Click:Connect(function()
+        ShowSide()
+    end)
+
+    return Window
+end
+
+return Library
